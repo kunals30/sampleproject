@@ -61,7 +61,11 @@ pipeline {
           string(credentialsId: 'sonarcloud-token', variable: 'SONAR_TOKEN')
         ]) {
           withEnv([
-            "PATH+SONAR=${tool 'SonarScanner'}/bin"
+            
+  "PATH+SONAR=${tool 'SonarScanner'}/bin",
+  "SONAR_SCANNER_OPTS=-Xms128m -Xmx512m",
+  "NODE_OPTIONS=--max-old-space-size=256"
+
           ]) {
             sh '''
               . .venv/bin/activate
