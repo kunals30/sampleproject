@@ -39,27 +39,29 @@ pipeline {
       }
     }
 
-    stage('SonarCloud Scan') {
+stage('SonarCloud Scan') {
   steps {
-    withEnv([
-      "SONAR_TOKEN=${credentials('sonarcloud-token')}",
-      "PATH+SONAR=${tool 'SonarScanner'}/bin"
+    withCredentials([
+      string(credentialsId: 'sonarcloud-token', variable: 'SONAR_TOKEN')
     ]) {
-      sh '''
-        . .venv/bin/activate
-        sonar-scanner \
-          -Dsonar.organization=kunals30 \
-          -Dsonar.projectKey=kunals30_sampleproject \
-          -Dsonar.host.url=https://sonarcloud.io \
-          -Dsonar.sources=src \
-          -Dsonar.tests=tests \
-          -Dsonar.python.coverage.reportPaths=coverage.xml
-      '''
+      withEnv([
+        "PATH+SONAR=${tool 'SonarScanner'}/bin"
+      ]) {
+        sh '''
+          . .venv/bin/activate
+          sonar-scanner \
+            -Dsonar.organization=kunals30 \
+            -Dsonar.projectKey=kunals30_sampleproject \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.sources=src \
+            -Dsonar.tests=tests \
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+        '''
+      }
     }
   }
 }
 
-    
 post {
     always {
       archiveArtifacts artifacts: 'dist/*,coverage.xml', fingerprint: true
