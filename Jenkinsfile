@@ -18,7 +18,7 @@ pipeline {
       }
     }
 
-    stage('Setup Python venv & deps') {
+    stage('Setup Python Environment') {
       steps {
         sh '''
           python3 -m venv .venv
@@ -39,34 +39,44 @@ pipeline {
       }
     }
 
-stage('SonarCloud Scan') {
-  steps {
-    withCredentials([
-      string(credentialsId: 'sonarcloud-token', variable: 'SONAR_TOKEN')
-    ]) {
-      withEnv([
-        "PATH+SONAR=${tool 'SonarScanner'}/bin"
-      ]) {
+    stage('Build Python Wheel') {
+      steps {
         sh '''
           . .venv/bin/activate
-          sonar-scanner \
-            -Dsonar.organization=kunals30 \
-            -Dsonar.projectKey=kunals30_sampleproject \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.sources=src \
-            -Dsonar.tests=tests \
-            -Dsonar.python.coverage.reportPaths=coverage.xml
+          python -m build
+          ls -l dist/
         '''
       }
     }
-  }
-}
 
-post {
+    stage('SonarCloud Scan') {
+      steps {
+        withCredentials([
+          string(credentialsId: 'sonarcloud-token', variable: 'SONAR_TOKEN')
+        ]) {
+          withEnv([
+            "PATH+SONAR=${tool 'SonarScanner'}/bin"
+          ]) {
+            sh '''
+              . .venv/bin/activate
+              sonar-scanner \
+                -Dsonar.organization=${SONAR_ORG} \
+                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                -Dsonar.host.url=https://sonarcloud.io \
+                -Dsonar.sources=src \
+                -Dsonar.tests=tests \
+                -Dsonar.python.coverage.reportPaths=coverage.xml
+            '''
+          }
+        }
+      }
+    }
+  }
+
+  post {
     always {
       archiveArtifacts artifacts: 'dist/*,coverage.xml', fingerprint: true
       cleanWs()
     }
   }
 }
-
