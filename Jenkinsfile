@@ -77,6 +77,7 @@ pipeline {
         }
       }
     }
+  }
 
   post {
     always {
