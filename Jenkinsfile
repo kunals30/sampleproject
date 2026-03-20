@@ -78,14 +78,14 @@ pipeline {
       }
     }
 
-//    stage('Performance Tests') {
-//      steps {
-//        sh '''
-//          k6 run performance/load_test.js
-//        '''
-//      }
-//    }
-//  }
+/*    stage('Performance Tests') {
+      steps {
+        sh '''
+          k6 run performance/load_test.js
+        '''
+      }
+    }
+  }*/
 
   post {
     always {
