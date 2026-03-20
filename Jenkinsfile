@@ -13,9 +13,7 @@ pipeline {
   stages {
 
     stage('Checkout') {
-      steps {
-        checkout scm
-      }
+      steps { checkout scm }
     }
 
     stage('Setup Python Environment') {
@@ -39,12 +37,20 @@ pipeline {
       }
     }
 
+    stage('Functional Tests') {
+      steps {
+        sh '''
+          . .venv/bin/activate
+          pytest -m functional
+        '''
+      }
+    }
+
     stage('Build Python Wheel') {
       steps {
         sh '''
           . .venv/bin/activate
           python -m build
-          ls -l dist/
         '''
       }
     }
@@ -69,6 +75,14 @@ pipeline {
             '''
           }
         }
+      }
+    }
+
+    stage('Performance Tests') {
+      steps {
+        sh '''
+          k6 run performance/load_test.js
+        '''
       }
     }
   }
