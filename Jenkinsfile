@@ -61,11 +61,7 @@ pipeline {
           string(credentialsId: 'sonarcloud-token', variable: 'SONAR_TOKEN')
         ]) {
           withEnv([
-            
-  "PATH+SONAR=${tool 'SonarScanner'}/bin",
-  "SONAR_SCANNER_OPTS=-Xms128m -Xmx512m",
-  "NODE_OPTIONS=--max-old-space-size=256"
-
+            "PATH+SONAR=${tool 'SonarScanner'}/bin"
           ]) {
             sh '''
               . .venv/bin/activate
@@ -79,6 +75,14 @@ pipeline {
             '''
           }
         }
+      }
+    }
+
+    stage('Performance Tests') {
+      steps {
+        sh '''
+          k6 run performance/load_test.js
+        '''
       }
     }
   }
