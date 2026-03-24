@@ -82,9 +82,9 @@ pipeline {
 stage('Performance Tests') {
   steps {
     sh '''
-      ls -al performance || true
-      test -f performance/load_test.js
-      k6 run ./performance/load_test.js
+      ls -al tests/performance || true
+      test -f tests/performance/load_test.js
+      k6 run ./tests/performance/load_test.js
     '''
   }
 }
