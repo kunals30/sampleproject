@@ -98,18 +98,11 @@ pipeline {
     }
 
     // ===== Docker Build (NEW) =====
-    stage('Docker Build') {
-  agent { label 'docker' }
-  steps {
-    unstash 'python-wheel'
-    sh '''
-      ls -al dist
-      docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-    '''
-  }
-}
+    
 
-    // ===== Push Docker Image to Nexus (NEW) =====
+
+
+Push Docker Image to Nexus (NEW) =====
     stage('Push Docker Image to Nexus') {
       agent { label 'docker' }
       steps {
