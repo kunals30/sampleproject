@@ -6,13 +6,23 @@ pipeline {
   }
 
   environment {
+    // Sonar
     SONAR_ORG = "kunals30"
     SONAR_PROJECT_KEY = "kunals30_sampleproject"
 
+    // Image
     IMAGE_NAME = "sampleproject"
     IMAGE_TAG  = "build-${BUILD_NUMBER}"
+
+    // Nexus
     NEXUS_REGISTRY = "65.1.128.203:8082"
     NEXUS_IMAGE = "${NEXUS_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+
+    // AWS ECR
+    AWS_REGION = "ap-south-1"
+    AWS_ACCOUNT_ID = "319623177745"        // 🔴 CHANGE THIS
+    ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+    ECR_IMAGE = "${ECR_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
   }
 
   stages {
@@ -123,6 +133,19 @@ pipeline {
             docker logout ${NEXUS_REGISTRY}
           '''
         }
+      }
+    }
+
+    stage('Push Docker Image to AWS ECR') {
+      steps {
+        sh '''
+          echo "Logging in to AWS ECR"
+          aws ecr get-login-password --region ${AWS_REGION} \
+            | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+
+          docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${ECR_IMAGE}
+          docker push ${ECR_IMAGE}
+        '''
       }
     }
   }
