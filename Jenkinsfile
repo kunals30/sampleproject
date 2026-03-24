@@ -3,13 +3,14 @@ pipeline {
 
   options {
     timestamps()
+    skipDefaultCheckout(true)
   }
 
   environment {
     SONAR_ORG = "kunals30"
     SONAR_PROJECT_KEY = "kunals30_sampleproject"
 
-    // ===== Docker / Nexus (NEW) =====
+    // Docker / Nexus
     IMAGE_NAME = "sampleproject"
     IMAGE_TAG  = "build-${BUILD_NUMBER}"
     NEXUS_REGISTRY = "65.1.128.203:8082"
@@ -21,6 +22,8 @@ pipeline {
     stage('Checkout') {
       steps {
         checkout scm
+        // stash entire repo so docker agent gets Dockerfile + src + pyproject.toml etc.
+        stash name: 'workspace-src', includes: '**/*'
       }
     }
 
@@ -54,17 +57,20 @@ pipeline {
       }
     }
 
-      stage('Build Python Wheel') {
-  steps {
-    sh '''
-      . .venv/bin/activate
-      python -m build
-    '''
-    stash name: 'python-wheel', includes: 'dist/*.whl'
-  }
-}
-    
-     stage('SonarCloud Scan') {
+    stage('Build Python Wheel') {
+      steps {
+        sh '''
+          . .venv/bin/activate
+          python -m build
+          echo "Wheel output:"
+          ls -al dist || true
+        '''
+        // stash wheel so docker agent can COPY it in Dockerfile
+        stash name: 'python-wheel', includes: 'dist/**'
+      }
+    }
+
+    stage('SonarCloud Scan') {
       steps {
         withCredentials([
           string(credentialsId: 'sonarcloud-token', variable: 'SONAR_TOKEN')
@@ -97,19 +103,26 @@ pipeline {
       }
     }
 
-    // ===== Docker Build (NEW) =====
     stage('Docker Build') {
-  agent { label 'docker' }
-  steps {
-    unstash 'python-wheel'
-    sh '''
-      ls -al dist
-      docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-    '''
-  }
-}
+      agent { label 'docker' }
+      steps {
+        // IMPORTANT: restore repo + wheel onto docker agent BEFORE docker build
+        unstash 'workspace-src'
+        unstash 'python-wheel'
 
-    // ===== Push Docker Image to Nexus (NEW) =====
+        sh '''
+          echo "Docker agent workspace:"
+          ls -al
+
+          echo "dist folder on docker agent:"
+          ls -al dist
+
+          echo "Building Docker image ${IMAGE_NAME}:${IMAGE_TAG}"
+          docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+        '''
+      }
+    }
+
     stage('Push Docker Image to Nexus') {
       agent { label 'docker' }
       steps {
@@ -143,4 +156,3 @@ pipeline {
     }
   }
 }
-
