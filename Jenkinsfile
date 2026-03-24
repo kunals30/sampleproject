@@ -53,6 +53,39 @@ pipeline {
       }
     }
 
+    stage('SonarCloud Scan') {
+      steps {
+        withCredentials([
+          string(credentialsId: 'sonarcloud-token', variable: 'SONAR_TOKEN')
+        ]) {
+          withEnv([
+            "PATH+SONAR=${tool 'SonarScanner'}/bin"
+          ]) {
+            sh '''
+              . .venv/bin/activate
+              sonar-scanner \
+                -Dsonar.organization=${SONAR_ORG} \
+                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                -Dsonar.host.url=https://sonarcloud.io \
+                -Dsonar.sources=src \
+                -Dsonar.tests=tests \
+                -Dsonar.python.coverage.reportPaths=coverage.xml
+            '''
+          }
+        }
+      }
+    }
+
+    stage('Performance Tests') {
+      steps {
+        sh '''
+          test -f tests/performance/load_test.js
+          k6 run tests/performance/load_test.js \
+            --summary-export=k6-summary.json
+        '''
+      }
+    }
+
     stage('Build Python Wheel') {
       steps {
         sh '''
@@ -96,7 +129,8 @@ pipeline {
 
   post {
     always {
-      archiveArtifacts artifacts: 'dist/*,coverage.xml', fingerprint: true
+      archiveArtifacts artifacts: 'dist/*,coverage.xml,k6-summary.json',
+                       fingerprint: true
       junit 'unit-tests.xml'
       junit 'functional-tests.xml'
       cleanWs()
