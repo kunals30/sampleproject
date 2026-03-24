@@ -32,7 +32,7 @@ pipeline {
       steps {
         sh '''
           . .venv/bin/activate
-          pytest --cov=src --cov-report=xml
+          pytest --cov=src --cov-report=xml --junitxml=unit-tests.xml
         '''
       }
     }
@@ -41,7 +41,7 @@ pipeline {
       steps {
         sh '''
           . .venv/bin/activate
-          pytest -m functional
+          pytest -m functional --junitxml=functional-tests.xml
         '''
       }
     }
@@ -84,7 +84,7 @@ stage('Performance Tests') {
     sh '''
       ls -al tests/performance || true
       test -f tests/performance/load_test.js
-      k6 run ./tests/performance/load_test.js
+      k6 run ./tests/performance/load_test.js --summary-export=k6-summary.json
     '''
   }
 }
@@ -92,7 +92,9 @@ stage('Performance Tests') {
    
 post {
     always {
-      archiveArtifacts artifacts: 'dist/*,coverage.xml', fingerprint: true
+      archiveArtifacts artifacts: 'dist/*,coverage.xml,k6-summary.json', fingerprint: true
+      junit 'unit-tests.xml'
+      junit 'functional-tests.xml'
       cleanWs()
     }
   }
