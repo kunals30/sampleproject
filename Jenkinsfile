@@ -88,7 +88,7 @@ stage('Performance Tests') {
     '''
   }
 }
-
+}
    
 post {
     always {
