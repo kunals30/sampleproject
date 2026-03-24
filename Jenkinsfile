@@ -78,16 +78,19 @@ pipeline {
       }
     }
 
-    stage('Performance Tests') {
-      steps {
-        sh '''
-          k6 run performance/load_test.js
-        '''
-      }
-    }
-  }
 
-  post {
+stage('Performance Tests') {
+  steps {
+    sh '''
+      ls -al performance || true
+      test -f performance/load_test.js
+      k6 run ./performance/load_test.js
+    '''
+  }
+}
+
+   
+post {
     always {
       archiveArtifacts artifacts: 'dist/*,coverage.xml', fingerprint: true
       cleanWs()
