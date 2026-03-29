@@ -2,14 +2,11 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Copy built wheel
-COPY dist/*.whl /app/
+COPY pyproject.toml .
+RUN pip install .
 
-# Install the wheel
-RUN pip install --no-cache-dir *.whl
+COPY . .
 
-# (Optional) if your app exposes a port
-# EXPOSE 8000
+EXPOSE 5000
 
-# Adjust module name if needed
-CMD ["python", "-m", "sampleproject"]
+CMD ["python", "app.py"]
